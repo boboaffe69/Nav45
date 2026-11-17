@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>NAV45</title>
+  <link rel="icon" type="image/png" href="icon.png" />
+  <!-- installable web app (iPhone: Safari → Share → Add to Home Screen) -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NAV45" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="format-detection" content="telephone=no" />
+  <link href="vendor/maplibre-gl.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- ================= SIDE PANEL ================= -->
+  <aside class="panel" id="panel">
+    <div class="progress" id="progress"><div></div></div>
+    <div class="sheet-handle" id="sheet-handle"><span></span></div>
+
+    <header class="panel-head">
+      <button class="icon-btn" id="btn-menu" data-i18n-title="menu"><span class="ms">menu</span></button>
+      <div class="brand"><img src="icon.png" alt="" /><span>NAV45</span></div>
+      <div class="mode-tabs" id="type-tabs" role="tablist">
+        <button data-type="electric" role="tab"><span class="ms">electric_car</span><span data-i18n="electric">Electric</span></button>
+        <button data-type="fuel" role="tab"><span class="ms">local_gas_station</span><span data-i18n="combustion">Fuel</span></button>
+      </div>
+    </header>
+
+    <div class="panel-body" id="panel-body">
+      <!-- waypoints -->
+      <section class="dir">
+        <div class="wps" id="waypoints"></div>
+        <button class="swap-btn" id="btn-swap" data-i18n-title="reverse"><span class="ms">swap_vert</span></button>
+      </section>
+      <div class="dir-actions">
+        <button class="text-btn" id="btn-add-stop"><span class="ms add-circle">add</span><span data-i18n="addStop">Add stop</span></button>
+        <button class="text-btn" id="btn-options"><span data-i18n="options">Options</span><span class="ms" id="options-caret">expand_more</span></button>
+      </div>
+
+      <!-- route preference -->
+      <div class="pref" id="pref-chips">
+        <button class="chip" data-pref="fastest"><span class="ms">bolt</span><span data-i18n="prefFastest">Fastest</span></button>
+        <button class="chip" data-pref="quiet"><span class="ms">eco</span><span data-i18n="prefQuiet">Quiet roads</span></button>
+        <button class="chip" data-pref="shortest"><span class="ms">straighten</span><span data-i18n="prefShortest">Shortest</span></button>
+      </div>
+
+      <div class="options hidden" id="options">
+        <label class="check"><input type="checkbox" id="opt-hills" /><span data-i18n="hills">Avoid steep hills</span></label>
+        <label class="check"><input type="checkbox" id="opt-ferries" /><span data-i18n="ferries">Avoid ferries</span></label>
+        <div class="opt-row"><span data-i18n="topSpeed">Top speed</span>
+          <div class="seg" id="speed-seg"><button data-speed="25">25 km/h</button><button data-speed="45">45 km/h</button></div>
+        </div>
+        <p class="legal"><span class="ms">verified_user</span><span data-i18n="legalLine">Never uses Autobahn or Kraftfahrstraße</span></p>
+      </div>
+
+      <!-- vehicle -->
+      <section class="vehicle" id="vehicle">
+        <button class="vehicle-row" id="vehicle-toggle">
+          <span class="ms vehicle-ico" id="vehicle-ico">electric_car</span>
+          <span class="vehicle-text"><b id="vehicle-name">Citroën Ami</b><small id="vehicle-sub">80% · 60 km</small></span>
+          <span class="battery" id="vehicle-battery"><i></i></span>
+          <span class="ms">expand_more</span>
+        </button>
+        <div class="vehicle-edit hidden" id="vehicle-edit">
+          <div class="field-row"><label for="vehicle-preset" data-i18n="vehicleModel">Model</label><select id="vehicle-preset"></select></div>
+          <div class="field-row"><label for="level-slider" id="level-label">Battery now</label><input type="range" id="level-slider" min="0" max="100" step="1" /><b id="level-val">80%</b></div>
+          <button class="text-btn small" id="btn-vehicle-settings"><span class="ms">tune</span><span data-i18n="moreVehicle">Range, battery and costs</span></button>
+        </div>
+      </section>
+
+      <!-- results -->
+      <section class="results" id="results"></section>
+
+      <!-- stations -->
+      <section class="stations" id="stations">
+        <button class="sec-toggle" id="stations-toggle">
+          <span class="ms sec-ico">ev_station</span>
+          <span class="sec-text"><b id="stations-title">Stations</b><small id="stations-count"></small></span>
+          <span class="ms sec-caret">expand_more</span>
+        </button>
+        <div class="stations-body hidden" id="stations-body">
+        <div class="sec-head">
+          <div class="seg seg-sm" id="station-tabs">
+            <button data-tab="charging"><span class="ms">ev_station</span><span data-i18n="tabCharge">Charging</span></button>
+            <button data-tab="fuel"><span class="ms">local_gas_station</span><span data-i18n="tabFuel">Fuel</span></button>
+          </div>
+        </div>
+        <div class="st-filters">
+          <select id="corridor"><option value="500"></option><option value="1000"></option><option value="2000"></option><option value="5000"></option></select>
+          <button class="chip small" id="compat-chip"><span class="ms">check</span><span id="compat-label">Fits my car</span></button>
+        </div>
+        <div class="st-list" id="station-list"></div>
+        </div>
+      </section>
+
+      <footer class="panel-foot" id="data-note"></footer>
+    </div>
+  </aside>
+  <button class="collapse-tab" id="collapse-tab" data-i18n-title="togglePanel"><span class="ms">arrow_left</span></button>
+
+  <!-- ================= MENU DRAWER ================= -->
+  <div class="scrim hidden" id="scrim"></div>
+  <nav class="drawer" id="drawer">
+    <div class="drawer-head"><img src="icon.png" alt="" /><span>NAV45</span></div>
+    <button class="drawer-item" id="m-theme"><span class="ms" id="m-theme-ico">contrast</span><span data-i18n="themeLabel">Map colors</span><span class="drawer-val" id="m-theme-val">Automatic</span></button>
+    <button class="drawer-item" id="m-lang"><span class="ms">translate</span><span data-i18n="language">Language</span><span class="drawer-val" id="m-lang-val">English</span></button>
+    <button class="drawer-item" id="m-voice"><span class="ms">record_voice_over</span><span data-i18n="voiceGuidance">Voice guidance</span><span class="switch" id="m-voice-switch"></span></button>
+    <button class="drawer-item" id="m-voicepick"><span class="ms">graphic_eq</span><span data-i18n="voicePick">Voice</span><span class="drawer-val" id="m-voicepick-val">Thorsten</span></button>
+    <button class="drawer-item" id="m-preview"><span class="ms">play_circle</span><span data-i18n="previewSetting">Preview drives</span><span class="switch" id="m-preview-switch"></span></button>
+    <button class="drawer-item" id="m-saver"><span class="ms">battery_saver</span><span data-i18n="batterySaver">Battery saver</span><span class="switch" id="m-saver-switch"></span></button>
+    <button class="drawer-item" id="m-range"><span class="ms">radar</span><span data-i18n="rangeRing">Show range on map</span><span class="switch" id="m-range-switch"></span></button>
+    <div class="drawer-sep"></div>
+    <button class="drawer-item" id="m-vehicle"><span class="ms">directions_car</span><span data-i18n="vehicleSettings">Vehicle settings</span></button>
+    <div class="drawer-sep"></div>
+    <div class="drawer-note" id="drawer-note"></div>
+  </nav>
+
+  <!-- ================= MAP CONTROLS ================= -->
+  <div class="map-ctrls" id="map-ctrls">
+    <button class="fab" id="ctrl-compass" data-i18n-title="north"><span class="ms" id="compass-ico">explore</span></button>
+    <button class="fab" id="ctrl-3d" data-i18n-title="view3d"><b>3D</b></button>
+    <button class="fab" id="ctrl-locate" data-i18n-title="myLoc"><span class="ms">my_location</span></button>
+    <div class="zoom">
+      <button id="ctrl-zoom-in" data-i18n-title="zoomIn"><span class="ms">add</span></button>
+      <button id="ctrl-zoom-out" data-i18n-title="zoomOut"><span class="ms">remove</span></button>
+    </div>
+  </div>
+  <button class="layer-btn" id="ctrl-theme"><span class="layer-thumb"></span><span class="layer-label" id="layer-label">Dark</span></button>
+  <button class="pill floating-pill hidden" id="btn-search-area"><span class="ms">search</span><span data-i18n="searchHere">Search stations in this area</span></button>
+
+  <!-- ================= NAVIGATION ================= -->
+  <div class="nav hidden" id="nav">
+    <div class="nav-banner">
+      <div class="nav-main">
+        <span class="ms nav-arrow" id="nav-icon">straight</span>
+        <div class="nav-text">
+          <div class="nav-dist" id="nav-dist">—</div>
+          <div class="nav-instr" id="nav-instr"></div>
+        </div>
+      </div>
+      <div class="nav-then hidden" id="nav-then"></div>
+    </div>
+
+    <div class="nav-speed">
+      <div class="limit hidden" id="sp-limit" data-i18n-title="roadLimit">50</div>
+      <div class="speed" id="speed"><b id="sp-speed">0</b><span>km/h</span><small id="sp-max">max 45</small></div>
+    </div>
+
+    <div class="nav-fabs">
+      <button class="fab" id="nav-mute" data-i18n-title="voice"><span class="ms" id="nav-mute-ico">volume_up</span></button>
+      <button class="fab" id="nav-overview" data-i18n-title="overview"><span class="ms">alt_route</span></button>
+    </div>
+    <button class="pill recenter hidden" id="nav-recenter"><span class="ms">navigation</span><span data-i18n="recenter">Re-center</span></button>
+
+    <div class="nav-sheet">
+      <button class="exit" id="nav-end" data-i18n-title="endNav"><span class="ms">close</span></button>
+      <div class="nav-sum">
+        <div class="nav-time-row"><span class="nav-time" id="nb-time">--</span><span class="nav-charge hidden" id="nb-charge"></span></div>
+        <div class="nav-meta"><span id="nb-km">--</span> · <span id="nb-eta">--:--</span> · <span id="nb-energy">--</span></div>
+      </div>
+      <div class="sim hidden" id="sim-bar">
+        <span class="sim-tag">DEMO</span>
+        <button data-sim="1">1×</button><button data-sim="2">2×</button><button data-sim="5">5×</button><button data-sim="10">10×</button><button data-sim="50">50×</button>
+        <button id="sim-pause"><span class="ms">pause</span></button>
+      </div>
+      <div class="nav-progress"><div id="nb-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="dialog-scrim hidden" id="modal-backdrop"><div class="dialog" id="modal"></div></div>
+
+  <script src="vendor/maplibre-gl.js"></script>
+  <script src="vendor/piper-tts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
